@@ -1,15 +1,17 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Sistema de Vendas PRO</title>
+<title>Comparador Inteligente de Marcas</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+
 body{
-font-family: Arial;
+font-family:Arial;
 background:#eef1f5;
 padding:20px;
 }
@@ -17,14 +19,10 @@ padding:20px;
 .container{
 background:white;
 padding:25px;
-border-radius:14px;
+border-radius:10px;
 max-width:1100px;
 margin:auto;
-box-shadow:0 0 20px rgba(0,0,0,0.15);
-}
-
-h2{
-margin-top:0;
+box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 input,button{
@@ -34,80 +32,91 @@ margin:5px;
 
 .cards{
 display:flex;
-gap:15px;
-flex-wrap:wrap;
+gap:10px;
 margin-top:15px;
+flex-wrap:wrap;
 }
 
 .card{
 flex:1;
-min-width:200px;
 padding:15px;
-border-radius:10px;
+border-radius:8px;
 color:white;
 font-weight:bold;
+text-align:center;
+min-width:180px;
 }
 
 .azul{background:#2196f3}
 .verde{background:#4caf50}
 .roxo{background:#673ab7}
+.laranja{background:#ff9800}
 
-table{
-width:100%;
-border-collapse:collapse;
+.vermelho{background:#e53935}
+.amarelo{background:#fdd835;color:black}
+.verdeEscuro{background:#1b5e20}
+
+.lista{
 margin-top:20px;
-}
-
-th,td{
-border:1px solid #ddd;
+background:#f7f7f7;
 padding:10px;
-text-align:center;
+border-radius:8px;
+max-height:300px;
+overflow:auto;
 }
 
-th{
-background:#f4f4f4;
+.item{
+padding:6px;
+border-bottom:1px solid #ddd;
 }
 
 </style>
 </head>
+
 <body>
 
 <div class="container">
 
-<h2>📊 Sistema Inteligente de Vendas</h2>
+<h2>📊 Comparador Inteligente de Marcas</h2>
 
-<input type="file" id="file1"> Período anterior  
-<input type="file" id="file2"> Período atual  
+<input type="file" id="file1"> Semana passada
+<input type="file" id="file2"> Semana atual
+
+<br><br>
+
+Digite as marcas separadas por vírgula
 
 <br>
 
-Meta mensal R$
-<input type="number" id="meta" value="10000">
+<input type="text" id="marcas" placeholder="ex: nd, fresh care, selection" size="50">
 
-<button onclick="comparar()">Analisar</button>
+<button onclick="comparar()">Buscar</button>
 
 <div class="cards">
 
-<div class="card azul" id="totalAntigo">Total anterior</div>
-<div class="card verde" id="totalAtual">Total atual</div>
-<div class="card roxo" id="crescimentoLoja">Crescimento loja</div>
+<div class="card azul" id="totalAntigo">
+Semana passada
+</div>
+
+<div class="card verde" id="totalAtual">
+Semana atual
+</div>
+
+<div class="card roxo" id="crescimento">
+Crescimento
+</div>
+
+<div class="card laranja" id="diferenca">
+Diferença %
+</div>
 
 </div>
 
-<table id="tabela">
-<thead>
-<tr>
-<th>Produto</th>
-<th>Anterior</th>
-<th>Atual</th>
-<th>Crescimento %</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+<h3>Produtos encontrados (revise e desmarque se necessário)</h3>
 
-<h3>🏆 Ranking mais vendidos</h3>
-<div id="ranking"></div>
+<div class="lista" id="listaProdutos"></div>
+
+<button onclick="recalcular()">Recalcular</button>
 
 <canvas id="grafico" style="margin-top:30px"></canvas>
 
@@ -115,49 +124,96 @@ Meta mensal R$
 
 <script>
 
-let s1={}, s2={}
+let listaAnterior=[]
+let listaAtual=[]
 let chart
 
-function ler(file, cb){
+function ler(file,callback){
 
 let reader=new FileReader()
 
 reader.onload=e=>{
+
 let data=new Uint8Array(e.target.result)
 let wb=XLSX.read(data,{type:'array'})
 let sheet=wb.Sheets[wb.SheetNames[0]]
 let json=XLSX.utils.sheet_to_json(sheet)
-cb(json)
+
+callback(json)
+
 }
 
 reader.readAsArrayBuffer(file)
 
 }
 
-function cor(p){
-
-if(p<=-50) return "#f44336"
-if(p<0) return "#ff9800"
-if(p==0) return "#ffd600"
-if(p<=50) return "#8bc34a"
-return "#2e7d32"
-
-}
-
 function comparar(){
 
-s1={}
-s2={}
+let marcasInput=document.getElementById("marcas").value.toLowerCase()
+let marcas=marcasInput.split(",").map(m=>m.trim()).filter(m=>m!="")
 
-ler(file1.files[0],d1=>{
+let f1=document.getElementById("file1").files[0]
+let f2=document.getElementById("file2").files[0]
 
-d1.forEach(p=> s1[p.Produto]=Number(p.Total))
+if(!f1 || !f2){
+alert("Selecione os dois arquivos")
+return
+}
 
-ler(file2.files[0],d2=>{
+if(marcas.length==0){
+alert("Digite pelo menos uma marca")
+return
+}
 
-d2.forEach(p=> s2[p.Produto]=Number(p.Total))
+listaAnterior=[]
+listaAtual=[]
 
-mostrar()
+ler(f1,dados=>{
+
+dados.forEach(p=>{
+
+let produto=String(p.Produto || "").toLowerCase()
+let encontrou=marcas.some(m=>produto.includes(m))
+
+if(encontrou){
+
+let qtd=Number(p.Quantidade) || 0
+let valorUnit=Number(p["Valor Unitário (R$)"] || p["Valor Unitario"] || p.Valor) || 0
+
+listaAnterior.push({
+nome:p.Produto,
+qtd:qtd,
+valor:qtd*valorUnit
+})
+
+}
+
+})
+
+ler(f2,dados2=>{
+
+dados2.forEach(p=>{
+
+let produto=String(p.Produto || "").toLowerCase()
+let encontrou=marcas.some(m=>produto.includes(m))
+
+if(encontrou){
+
+let qtd=Number(p.Quantidade) || 0
+let valorUnit=Number(p["Valor Unitário (R$)"] || p["Valor Unitario"] || p.Valor) || 0
+
+listaAtual.push({
+nome:p.Produto,
+qtd:qtd,
+valor:qtd*valorUnit
+})
+
+}
+
+})
+
+mostrarLista()
+recalcular()
 
 })
 
@@ -165,80 +221,95 @@ mostrar()
 
 }
 
-function mostrar(){
+function mostrarLista(){
 
-let tbody=document.querySelector("#tabela tbody")
-tbody.innerHTML=""
+let html=""
 
-let produtos=new Set([
-...Object.keys(s1),
-...Object.keys(s2)
-])
+listaAtual.forEach((p,i)=>{
 
-let labels=[]
-let dados=[]
-let cores=[]
-let total1=0
-let total2=0
-let ranking=[]
-
-produtos.forEach(nome=>{
-
-let v1=s1[nome]||0
-let v2=s2[nome]||0
-
-total1+=v1
-total2+=v2
-
-let cres=0
-if(v1>0) cres=((v2-v1)/v1)*100
-
-let c=cor(cres)
-
-labels.push(nome)
-dados.push(cres)
-cores.push(c)
-
-ranking.push({nome, valor:v2})
-
-tbody.innerHTML+=`
-<tr style="background:${c}33">
-<td>${nome}</td>
-<td>R$ ${v1}</td>
-<td>R$ ${v2}</td>
-<td>${cres.toFixed(1)}%</td>
-</tr>
+html+=`
+<div class="item">
+<input type="checkbox" checked id="prod_${i}">
+${p.nome} | Qtd: ${p.qtd} | R$ ${p.valor.toFixed(2)}
+</div>
 `
 
 })
 
-ranking.sort((a,b)=>b.valor-a.valor)
+document.getElementById("listaProdutos").innerHTML=html
 
-let html=""
-ranking.slice(0,5).forEach(r=>{
-html+=`<div>🥇 ${r.nome} → R$ ${r.valor}</div>`
+}
+
+function corCrescimento(valor){
+
+if(valor <= -20) return "vermelho"
+if(valor < 0) return "laranja"
+if(valor == 0) return "amarelo"
+if(valor <= 20) return "verde"
+return "verdeEscuro"
+
+}
+
+function recalcular(){
+
+let totalAtual=0
+
+listaAtual.forEach((p,i)=>{
+
+let check=document.getElementById("prod_"+i)
+
+if(check && check.checked){
+totalAtual+=p.valor
+}
+
 })
 
-document.getElementById("ranking").innerHTML=html
+let totalAnterior=0
 
-let cresLoja=((total2-total1)/total1)*100
+listaAnterior.forEach(p=>{
+totalAnterior+=p.valor
+})
 
-totalAntigo.innerHTML="Total anterior<br>R$ "+total1
-totalAtual.innerHTML="Total atual<br>R$ "+total2
-crescimentoLoja.innerHTML="Crescimento<br>"+cresLoja.toFixed(1)+"%"
+let crescimento = totalAnterior>0
+? ((totalAtual-totalAnterior)/totalAnterior)*100
+:0
+
+let diferenca = totalAnterior>0
+? (totalAtual/totalAnterior)*100
+:0
+
+document.getElementById("totalAntigo").innerHTML=
+"Semana passada<br>R$ "+totalAnterior.toFixed(2)
+
+document.getElementById("totalAtual").innerHTML=
+"Semana atual<br>R$ "+totalAtual.toFixed(2)
+
+let cardCrescimento=document.getElementById("crescimento")
+
+cardCrescimento.className="card "+corCrescimento(Math.round(crescimento))
+
+let simbolo = crescimento>0 ? "📈 +" : crescimento<0 ? "📉 " : "➖ "
+
+cardCrescimento.innerHTML=
+"Crescimento<br>"+simbolo+crescimento.toFixed(1)+"%"
+
+document.getElementById("diferenca").innerHTML=
+"Atual vs Passado<br>"+diferenca.toFixed(1)+"%"
 
 if(chart) chart.destroy()
 
-chart=new Chart(grafico,{
+chart=new Chart(document.getElementById("grafico"),{
+
 type:'bar',
+
 data:{
-labels:labels,
+labels:["Semana passada","Semana atual"],
 datasets:[{
-label:'Crescimento %',
-data:dados,
-backgroundColor:cores
+label:"Vendas (R$)",
+data:[totalAnterior,totalAtual]
 }]
 }
+
 })
 
 }
