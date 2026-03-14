@@ -1,290 +1,559 @@
 <!DOCTYPE html>
-
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Comparador Inteligente de Marcas</title>
+<title>Sistema Gerencial Inteligente PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#eef1f5;padding:20px;}
-.container{background:white;padding:25px;border-radius:10px;max-width:1200px;margin:auto;box-shadow:0 0 10px rgba(0,0,0,0.2);}
-input,button{padding:8px;margin:5px;}
-.cards{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;}
-.card{flex:1;padding:15px;border-radius:8px;color:white;font-weight:bold;text-align:center;min-width:180px;}
-.azul{background:#2196f3}
-.verde{background:#4caf50}
-.roxo{background:#673ab7}
-.laranja{background:#ff9800}
-.vermelho{background:#e53935}
-.amarelo{background:#fdd835;color:black}
-.verdeEscuro{background:#1b5e20}
-.lista{margin-top:20px;background:#f7f7f7;padding:10px;border-radius:8px;max-height:300px;overflow:auto;}
-.item{padding:6px;border-bottom:1px solid #ddd;}
-table{width:100%;border-collapse:collapse;margin-top:30px;}
-th,td{padding:10px;border:1px solid #ccc;text-align:center;}
-th{background:#1976d2;color:white;}
-.tituloParcial{font-size:20px;font-weight:bold;text-align:center;background:#e3f2fd;letter-spacing:1px;}
-</style>
 
+body{font-family:Arial;background:#eef1f5;padding:20px}
+
+.container{
+background:white;
+padding:25px;
+border-radius:10px;
+max-width:1700px;
+margin:auto;
+box-shadow:0 0 15px rgba(0,0,0,0.2)
+}
+
+input,select,button{
+padding:8px;
+margin:5px
+}
+
+table{
+border-collapse:collapse;
+width:100%;
+margin-top:15px
+}
+
+th,td{
+border:1px solid #ccc;
+padding:6px;
+text-align:center;
+font-size:13px
+}
+
+th{
+background:#1976d2;
+color:white
+}
+
+.vermelho{background:#e53935;color:white}
+.verde{background:#43a047;color:white}
+.amarelo{background:#fdd835}
+
+.titulo{
+font-size:22px;
+font-weight:bold;
+margin-top:25px
+}
+
+.listaBox{
+max-height:220px;
+overflow:auto;
+background:#f7f7f7;
+padding:10px;
+border-radius:8px;
+margin-top:10px
+}
+
+.parcialBox{
+margin-top:20px;
+border:2px solid black;
+background:white;
+display:inline-block
+}
+
+.parcialTitulo{
+background:yellow;
+font-weight:bold;
+text-align:center;
+padding:6px;
+font-size:16px
+}
+
+</style>
 </head>
 
 <body>
+
 <div class="container">
 
-<h2>📊 Comparador Inteligente de Marcas</h2>
+<h2>📊 Sistema Gerencial Inteligente PRO</h2>
 
-<input type="file" id="file1"> Semana passada <input type="file" id="file2"> Semana atual
+Modo
+<select id="modo">
+<option value="dia">Dia semana</option>
+<option value="hora">Por horário</option>
+</select>
 
-<br><br>
+Dia
+<select id="dia">
+<option>Segunda</option>
+<option>Terça</option>
+<option>Quarta</option>
+<option>Quinta</option>
+<option>Sexta</option>
+<option>Sábado</option>
+<option>Domingo</option>
+</select>
 
-<input type="text" id="marcas" placeholder="ex: nd ou marca propria" size="40">
+Horário <input type="time" id="hora">
 
-Horário <input type="time" id="horario">
+Marca <input type="text" id="marca">
 
-<button onclick="comparar()">Buscar</button>
+<br>
 
-<div class="cards">
-<div class="card azul" id="totalAntigo">Semana passada</div>
-<div class="card verde" id="totalAtual">Semana atual</div>
-<div class="card roxo" id="crescimento">Crescimento</div>
-<div class="card laranja" id="diferenca">Diferença %</div>
-</div>
+<input type="file" id="passado"> Semana passada
+<input type="file" id="atual"> Semana atual
 
-<h3>Produtos encontrados</h3>
-<div class="lista" id="listaProdutos"></div>
+<br>
 
-<button onclick="recalcular()">Recalcular</button>
+<button onclick="processar()">Processar marca</button>
+<button onclick="confirmarProdutos()">Confirmar produtos</button>
+<button onclick="limparTudo()">Limpar tudo</button>
+<button onclick="gerarParcial()">Gerar parcial</button>
+<button onclick="exportarImagem()">Exportar parcial imagem</button>
 
-<h3>📋 Histórico</h3>
+<h3>Selecionar produtos encontrados</h3>
+<div id="listaProdutos" class="listaBox"></div>
+
+<canvas id="grafico"></canvas>
+
+<div class="titulo">Lista semanal</div>
 
 <table>
 <thead>
 <tr>
+<th>Dia</th>
 <th>Loja</th>
 <th>Marca</th>
 <th>Semana passada</th>
 <th>Semana atual</th>
 <th>Crescimento</th>
+<th>Ação</th>
 </tr>
 </thead>
-<tbody id="historicoBody"></tbody>
+
+<tbody id="lista"></tbody>
 </table>
+
+<div class="titulo">Ranking lojas</div>
+
+<table>
+<thead>
+<tr>
+<th>Pos</th>
+<th>Loja</th>
+<th>Crescimento médio</th>
+</tr>
+</thead>
+
+<tbody id="ranking"></tbody>
+</table>
+
+<div class="titulo">Parcial Gerencial</div>
+
+<div class="parcialBox" id="printArea">
+
+<div class="parcialTitulo">PARCIAL SEMANA</div>
+
+<table id="tabelaParcial"></table>
+
+</div>
 
 </div>
 
 <script>
 
-let listaAnterior=[]
-let listaAtual=[]
-let lojaAtual=""
-let horarioAtual=""
-let tituloAdicionado=false
-let marcaModo=""
+let dados = JSON.parse(localStorage.getItem("dadosMarca") || "[]")
 
-const MARCAS_PROPRIAS=[
-"nutrifresh","fresh","petz","super secao","petix",
-"selection","zee","spike","fuzz","cdsg",
-"happy med","babypads"
-]
+let chart
 
-function ler(file,callback){
+let produtosTemp=[]
+let lojaTemp=""
+let marcaTemp=""
+let modoTemp=""
+let diaTemp=""
+let horaTemp=""
+
+function salvar(){
+
+localStorage.setItem("dadosMarca",JSON.stringify(dados))
+
+}
+
+function limparTudo(){
+
+if(confirm("Apagar tudo?")){
+
+dados=[]
+salvar()
+render()
+
+}
+
+}
+
+function excluirIndex(i){
+
+dados.splice(i,1)
+salvar()
+render()
+
+}
+
+function ler(file){
+
+return new Promise(res=>{
 
 let reader=new FileReader()
 
 reader.onload=e=>{
 
 let data=new Uint8Array(e.target.result)
+
 let wb=XLSX.read(data,{type:'array'})
+
 let sheet=wb.Sheets[wb.SheetNames[0]]
 
-/* 🔥 COMEÇA LER NA LINHA DO CABEÇALHO REAL */
 let json=XLSX.utils.sheet_to_json(sheet,{range:4})
 
-callback(json)
+res(json)
 
 }
 
 reader.readAsArrayBuffer(file)
 
+})
+
 }
 
-/* 🔥 FUNÇÃO TOTALMENTE CORRIGIDA */
-function pegarLoja(p){
+function buscaInteligente(produto,busca){
 
-if(!p.Loja) return null
+produto=(produto||"").toUpperCase()
+busca=(busca||"").toUpperCase()
 
-let loja=String(p.Loja).trim()
+produto=produto.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+busca=busca.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
 
-if(loja==="" || loja.toLowerCase().includes("total")) return null
+let regex=new RegExp("\\b"+busca+"S?\\b","i")
 
-return loja
-}
-
-function pegarProduto(p){
-return p.Produto||""
-}
-
-function pegarQuantidade(p){
-return Number(p.Quantidade||0)
-}
-
-function pegarValor(p){
-return Number(p["Valor Total"]||0)
-}
-
-function marcaPropria(produto){
-return MARCAS_PROPRIAS.some(m=>{
-if(m==="zee") return produto.includes("zee")
-let regex=new RegExp("\\b"+m+"\\b","i")
 return regex.test(produto)
-})
-}
-
-function comparar(){
-
-horarioAtual=document.getElementById("horario").value
-let marcaInput=document.getElementById("marcas").value.toLowerCase()
-
-let f1=document.getElementById("file1").files[0]
-let f2=document.getElementById("file2").files[0]
-
-listaAnterior=[]
-listaAtual=[]
-
-marcaModo = marcaInput.includes("marca propria") ? "MARCA PROPRIA" : marcaInput
-
-ler(f1,dados=>{
-
-dados.forEach(p=>{
-
-let loja=pegarLoja(p)
-if(!loja) return
-
-lojaAtual=loja
-
-let produto=String(pegarProduto(p)).toLowerCase()
-
-let encontrou = marcaModo==="MARCA PROPRIA"
-? marcaPropria(produto)
-: new RegExp("\\b"+marcaModo+"\\b","i").test(produto)
-
-if(encontrou){
-
-let venda=pegarQuantidade(p)*pegarValor(p)
-
-listaAnterior.push({produto:produto,valor:venda})
 
 }
 
+async function processar(){
+
+if(!passado.files[0] || !atual.files[0]){
+
+alert("Importe os dois arquivos")
+
+return
+
+}
+
+marcaTemp=document.getElementById("marca").value.toUpperCase()
+
+modoTemp=document.getElementById("modo").value
+diaTemp=document.getElementById("dia").value
+horaTemp=document.getElementById("hora").value
+
+let a=await ler(passado.files[0])
+let b=await ler(atual.files[0])
+
+produtosTemp=[]
+
+a.forEach(p=>{
+
+let nome=(p.Produto||"")
+
+if(!lojaTemp && p.Loja) lojaTemp=p.Loja
+
+if(buscaInteligente(nome,marcaTemp)){
+
+produtosTemp.push({
+
+nome:nome,
+vA:Number(p["Valor Total"]||0),
+vB:0
+
 })
-
-ler(f2,dados2=>{
-
-dados2.forEach(p=>{
-
-let loja=pegarLoja(p)
-if(!loja) return
-
-let produto=String(pegarProduto(p)).toLowerCase()
-
-let encontrou = marcaModo==="MARCA PROPRIA"
-? marcaPropria(produto)
-: new RegExp("\\b"+marcaModo+"\\b","i").test(produto)
-
-if(encontrou){
-
-let venda=pegarQuantidade(p)*pegarValor(p)
-
-listaAtual.push({produto:produto,valor:venda})
 
 }
 
 })
 
-mostrarLista()
-recalcular(false)
+b.forEach(p=>{
 
-})
+let nome=(p.Produto||"")
 
-})
+let item=produtosTemp.find(x=>x.nome==nome)
+
+if(item){
+
+item.vB+=Number(p["Valor Total"]||0)
 
 }
 
-function mostrarLista(){
+})
+
+mostrarListaProdutos()
+
+}
+
+function mostrarListaProdutos(){
 
 let html=""
 
-listaAtual.forEach((p,i)=>{
+produtosTemp.forEach((p,i)=>{
 
 html+=`
-<div class="item">
+<div>
 <input type="checkbox" checked id="prod_${i}">
-${marcaModo} | ${p.produto} | R$ ${p.valor.toFixed(2)}
+${p.nome} | Ant: R$ ${p.vA.toFixed(2)} | Atual: R$ ${p.vB.toFixed(2)}
 </div>
 `
 
 })
 
-document.getElementById("listaProdutos").innerHTML=html
+listaProdutos.innerHTML=html
+
 }
 
-function corCrescimento(v){
-if(v<=-20) return "vermelho"
-if(v<0) return "laranja"
-if(v==0) return "amarelo"
-if(v<=20) return "verde"
-return "verdeEscuro"
+function confirmarProdutos(){
+
+let vendaA=0
+let vendaB=0
+
+produtosTemp.forEach((p,i)=>{
+
+let c=document.getElementById("prod_"+i)
+
+if(c && c.checked){
+
+vendaA+=p.vA
+vendaB+=p.vB
+
 }
 
-function recalcular(perguntar=true){
-
-let totalAnterior=0
-let totalAtual=0
-
-listaAnterior.forEach(p=> totalAnterior+=p.valor)
-
-listaAtual.forEach((p,i)=>{
-let check=document.getElementById("prod_"+i)
-if(check && check.checked) totalAtual+=p.valor
 })
 
-let crescimento=((totalAtual-totalAnterior)/totalAnterior)*100
+if(vendaA==0 && vendaB==0){
 
-document.getElementById("totalAntigo").innerHTML="Semana passada<br>R$ "+totalAnterior.toFixed(2)
-document.getElementById("totalAtual").innerHTML="Semana atual<br>R$ "+totalAtual.toFixed(2)
-document.getElementById("crescimento").innerHTML="Crescimento<br>"+crescimento.toFixed(1)+"%"
-document.getElementById("diferenca").innerHTML="Atual vs Passado<br>"+((totalAtual/totalAnterior)*100).toFixed(1)+"%"
+alert("Nenhum produto selecionado")
 
-if(perguntar){
-if(confirm("Salvar no histórico?")){
+return
 
-if(!tituloAdicionado){
+}
 
-document.getElementById("historicoBody").innerHTML+=`
+let cresc = vendaA ? ((vendaB-vendaA)/vendaA)*100 : 0
+
+dados.push({
+
+modo:modoTemp,
+dia:diaTemp,
+hora:horaTemp,
+loja:lojaTemp,
+marca:marcaTemp,
+vendaA,
+vendaB,
+cresc
+
+})
+
+salvar()
+
+render()
+
+alert("Marca salva corretamente")
+
+}
+
+function cor(v){
+
+if(v<0)return"vermelho"
+if(v==0)return"amarelo"
+return"verde"
+
+}
+
+function render(){
+
+let html=""
+
+dados.forEach((d,i)=>{
+
+html+=`
 <tr>
-<td colspan="5" class="tituloParcial">
-PARCIAL COPA — ${horarioAtual}
+<td>${d.dia}</td>
+<td>${d.loja}</td>
+<td>${d.marca}</td>
+<td>R$ ${d.vendaA.toFixed(2)}</td>
+<td>R$ ${d.vendaB.toFixed(2)}</td>
+<td class="${cor(Math.round(d.cresc))}">${d.cresc.toFixed(1)}%</td>
+<td><button onclick="excluirIndex(${i})">Excluir</button></td>
+</tr>
+`
+
+})
+
+lista.innerHTML=html
+
+rankingFunc()
+
+graficoFunc()
+
+}
+
+function rankingFunc(){
+
+let mapa={}
+
+dados.forEach(d=>{
+
+if(!mapa[d.loja]) mapa[d.loja]={s:0,q:0}
+
+mapa[d.loja].s+=d.cresc
+mapa[d.loja].q++
+
+})
+
+let arr=[]
+
+for(let l in mapa){
+
+arr.push({
+
+loja:l,
+media:mapa[l].s/mapa[l].q
+
+})
+
+}
+
+arr.sort((a,b)=>b.media-a.media)
+
+let html=""
+
+arr.forEach((r,i)=>{
+
+html+=`
+<tr>
+<td>${i+1}</td>
+<td>${r.loja}</td>
+<td class="${cor(Math.round(r.media))}">
+${r.media.toFixed(1)}%
 </td>
 </tr>
 `
-tituloAdicionado=true
-}
 
-document.getElementById("historicoBody").innerHTML+=`
-<tr class="${corCrescimento(Math.round(crescimento))}">
-<td>${lojaAtual}</td>
-<td>${marcaModo}</td>
-<td>R$ ${totalAnterior.toFixed(2)}</td>
-<td>R$ ${totalAtual.toFixed(2)}</td>
-<td>${crescimento.toFixed(1)}%</td>
-</tr>
-`
-}
-}
+})
+
+ranking.innerHTML=html
 
 }
+
+function graficoFunc(){
+
+let labels=dados.map(d=>d.marca)
+
+let a=dados.map(d=>d.vendaA)
+let b=dados.map(d=>d.vendaB)
+
+if(chart) chart.destroy()
+
+chart=new Chart(grafico,{
+
+type:"bar",
+
+data:{
+
+labels,
+
+datasets:[
+
+{label:"Semana passada",data:a},
+{label:"Semana atual",data:b}
+
+]
+
+}
+
+})
+
+}
+
+function gerarParcial(){
+
+let lojas=[...new Set(dados.map(d=>d.loja))]
+let marcas=[...new Set(dados.map(d=>d.marca))]
+
+let html="<tr><th>Loja</th>"
+
+marcas.forEach(m=>{
+
+html+=`<th>${m}</th>`
+
+})
+
+html+="</tr>"
+
+lojas.forEach(loja=>{
+
+html+=`<tr><td>${loja}</td>`
+
+marcas.forEach(m=>{
+
+let total=0
+
+dados.forEach(d=>{
+
+if(d.loja==loja && d.marca==m){
+
+total+=d.vendaB
+
+}
+
+})
+
+html+=`<td>${total? "R$ "+total.toFixed(2):"-"}</td>`
+
+})
+
+html+="</tr>"
+
+})
+
+tabelaParcial.innerHTML=html
+
+}
+
+function exportarImagem(){
+
+html2canvas(document.getElementById("printArea"),{scale:3})
+
+.then(canvas=>{
+
+let link=document.createElement("a")
+
+link.download="parcial_semana.png"
+
+link.href=canvas.toDataURL()
+
+link.click()
+
+})
+
+}
+
+render()
 
 </script>
 
