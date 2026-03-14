@@ -2,48 +2,46 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Comparador Inteligente de Marcas</title>
+<title>Comparador Inteligente de Marcas e Lojas</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-
 body{
-font-family:Arial;
-background:#eef1f5;
-padding:20px;
+  font-family:Arial;
+  background:#eef1f5;
+  padding:20px;
 }
 
 .container{
-background:white;
-padding:25px;
-border-radius:10px;
-max-width:1100px;
-margin:auto;
-box-shadow:0 0 10px rgba(0,0,0,0.2);
+  background:white;
+  padding:25px;
+  border-radius:10px;
+  max-width:1200px;
+  margin:auto;
+  box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 input,button{
-padding:8px;
-margin:5px;
+  padding:8px;
+  margin:5px;
 }
 
 .cards{
-display:flex;
-gap:10px;
-margin-top:15px;
-flex-wrap:wrap;
+  display:flex;
+  gap:10px;
+  margin-top:15px;
+  flex-wrap:wrap;
 }
 
 .card{
-flex:1;
-padding:15px;
-border-radius:8px;
-color:white;
-font-weight:bold;
-text-align:center;
-min-width:180px;
+  flex:1;
+  padding:15px;
+  border-radius:8px;
+  color:white;
+  font-weight:bold;
+  text-align:center;
+  min-width:180px;
 }
 
 .azul{background:#2196f3}
@@ -51,22 +49,39 @@ min-width:180px;
 .roxo{background:#673ab7}
 .laranja{background:#ff9800}
 
-.vermelho{background:#e53935}
+.vermelho{background:#e53935;color:white}
 .amarelo{background:#fdd835;color:black}
-.verdeEscuro{background:#1b5e20}
+.verdeEscuro{background:#1b5e20;color:white}
 
 .lista{
-margin-top:20px;
-background:#f7f7f7;
-padding:10px;
-border-radius:8px;
-max-height:300px;
-overflow:auto;
+  margin-top:20px;
+  background:#f7f7f7;
+  padding:10px;
+  border-radius:8px;
+  max-height:300px;
+  overflow:auto;
 }
 
 .item{
-padding:6px;
-border-bottom:1px solid #ddd;
+  padding:6px;
+  border-bottom:1px solid #ddd;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:30px;
+}
+
+th,td{
+  padding:10px;
+  border:1px solid #ccc;
+  text-align:center;
+}
+
+th{
+  background:#1976d2;
+  color:white;
 }
 
 </style>
@@ -76,7 +91,7 @@ border-bottom:1px solid #ddd;
 
 <div class="container">
 
-<h2>📊 Comparador Inteligente de Marcas</h2>
+<h2>📊 Comparador Inteligente de Marcas e Lojas</h2>
 
 <input type="file" id="file1"> Semana passada
 <input type="file" id="file2"> Semana atual
@@ -117,7 +132,22 @@ Diferença %
 
 <button onclick="recalcular()">Recalcular</button>
 
-<canvas id="grafico" style="margin-top:30px"></canvas>
+<h3>📋 Crescimento por Loja</h3>
+
+<table id="tabelaLojas">
+
+<thead>
+<tr>
+<th>Loja</th>
+<th>Semana Passada</th>
+<th>Semana Atual</th>
+<th>Crescimento %</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
 
 </div>
 
@@ -125,7 +155,8 @@ Diferença %
 
 let listaAnterior=[]
 let listaAtual=[]
-let chart
+let lojasAnterior={}
+let lojasAtual={}
 
 function ler(file,callback){
 
@@ -146,6 +177,29 @@ reader.readAsArrayBuffer(file)
 
 }
 
+function pegarLoja(p){
+  return p.Loja || p.loja || p.Store || "Sem Loja"
+}
+
+function pegarProduto(p){
+  return p.Produto || p.produto || ""
+}
+
+function pegarQuantidade(p){
+  return Number(p.Quantidade || p.Qtd || 1)
+}
+
+function pegarValor(p){
+  return Number(
+    p["Valor Unitário (R$)"] ||
+    p["Valor Unitario"] ||
+    p.Valor ||
+    p.Venda ||
+    p.Total ||
+    0
+  )
+}
+
 function comparar(){
 
 let marcasInput=document.getElementById("marcas").value.toLowerCase()
@@ -159,31 +213,35 @@ alert("Selecione os dois arquivos")
 return
 }
 
-if(marcas.length==0){
-alert("Digite pelo menos uma marca")
-return
-}
-
 listaAnterior=[]
 listaAtual=[]
+lojasAnterior={}
+lojasAtual={}
 
 ler(f1,dados=>{
 
 dados.forEach(p=>{
 
-let produto=String(p.Produto || "").toLowerCase()
-let encontrou=marcas.some(m=>produto.includes(m))
+let produto=String(pegarProduto(p)).toLowerCase()
+let loja=pegarLoja(p)
+
+let encontrou=marcas.length==0 || marcas.some(m=>produto.includes(m))
 
 if(encontrou){
 
-let qtd=Number(p.Quantidade) || 0
-let valorUnit=Number(p["Valor Unitário (R$)"] || p["Valor Unitario"] || p.Valor) || 0
+let qtd=pegarQuantidade(p)
+let valor=pegarValor(p)
+
+let venda=qtd*valor
 
 listaAnterior.push({
-nome:p.Produto,
-qtd:qtd,
-valor:qtd*valorUnit
+nome:produto,
+loja:loja,
+valor:venda
 })
+
+if(!lojasAnterior[loja]) lojasAnterior[loja]=0
+lojasAnterior[loja]+=venda
 
 }
 
@@ -193,19 +251,26 @@ ler(f2,dados2=>{
 
 dados2.forEach(p=>{
 
-let produto=String(p.Produto || "").toLowerCase()
-let encontrou=marcas.some(m=>produto.includes(m))
+let produto=String(pegarProduto(p)).toLowerCase()
+let loja=pegarLoja(p)
+
+let encontrou=marcas.length==0 || marcas.some(m=>produto.includes(m))
 
 if(encontrou){
 
-let qtd=Number(p.Quantidade) || 0
-let valorUnit=Number(p["Valor Unitário (R$)"] || p["Valor Unitario"] || p.Valor) || 0
+let qtd=pegarQuantidade(p)
+let valor=pegarValor(p)
+
+let venda=qtd*valor
 
 listaAtual.push({
-nome:p.Produto,
-qtd:qtd,
-valor:qtd*valorUnit
+nome:produto,
+loja:loja,
+valor:venda
 })
+
+if(!lojasAtual[loja]) lojasAtual[loja]=0
+lojasAtual[loja]+=venda
 
 }
 
@@ -229,7 +294,7 @@ listaAtual.forEach((p,i)=>{
 html+=`
 <div class="item">
 <input type="checkbox" checked id="prod_${i}">
-${p.nome} | Qtd: ${p.qtd} | R$ ${p.valor.toFixed(2)}
+${p.nome} | ${p.loja} | R$ ${p.valor.toFixed(2)}
 </div>
 `
 
@@ -241,10 +306,10 @@ document.getElementById("listaProdutos").innerHTML=html
 
 function corCrescimento(valor){
 
-if(valor <= -20) return "vermelho"
-if(valor < 0) return "laranja"
-if(valor == 0) return "amarelo"
-if(valor <= 20) return "verde"
+if(valor<=-20) return "vermelho"
+if(valor<0) return "laranja"
+if(valor==0) return "amarelo"
+if(valor<=20) return "verde"
 return "verdeEscuro"
 
 }
@@ -252,21 +317,27 @@ return "verdeEscuro"
 function recalcular(){
 
 let totalAtual=0
+let lojasAtualCalc={}
 
 listaAtual.forEach((p,i)=>{
 
 let check=document.getElementById("prod_"+i)
 
 if(check && check.checked){
+
 totalAtual+=p.valor
+
+if(!lojasAtualCalc[p.loja]) lojasAtualCalc[p.loja]=0
+lojasAtualCalc[p.loja]+=p.valor
+
 }
 
 })
 
 let totalAnterior=0
 
-listaAnterior.forEach(p=>{
-totalAnterior+=p.valor
+Object.values(lojasAnterior).forEach(v=>{
+totalAnterior+=v
 })
 
 let crescimento = totalAnterior>0
@@ -283,33 +354,45 @@ document.getElementById("totalAntigo").innerHTML=
 document.getElementById("totalAtual").innerHTML=
 "Semana atual<br>R$ "+totalAtual.toFixed(2)
 
-let cardCrescimento=document.getElementById("crescimento")
+let card=document.getElementById("crescimento")
 
-cardCrescimento.className="card "+corCrescimento(Math.round(crescimento))
+card.className="card "+corCrescimento(Math.round(crescimento))
 
-let simbolo = crescimento>0 ? "📈 +" : crescimento<0 ? "📉 " : "➖ "
-
-cardCrescimento.innerHTML=
-"Crescimento<br>"+simbolo+crescimento.toFixed(1)+"%"
+card.innerHTML=
+"Crescimento<br>"+crescimento.toFixed(1)+"%"
 
 document.getElementById("diferenca").innerHTML=
 "Atual vs Passado<br>"+diferenca.toFixed(1)+"%"
 
-if(chart) chart.destroy()
+gerarTabela(lojasAnterior,lojasAtualCalc)
 
-chart=new Chart(document.getElementById("grafico"),{
-
-type:'bar',
-
-data:{
-labels:["Semana passada","Semana atual"],
-datasets:[{
-label:"Vendas (R$)",
-data:[totalAnterior,totalAtual]
-}]
 }
 
+function gerarTabela(lojasAnt,lojasAtu){
+
+let todas=new Set([...Object.keys(lojasAnt),...Object.keys(lojasAtu)])
+
+let html=""
+
+todas.forEach(loja=>{
+
+let v1=lojasAnt[loja]||0
+let v2=lojasAtu[loja]||0
+
+let crescimento=v1>0?((v2-v1)/v1)*100:0
+
+html+=`
+<tr class="${corCrescimento(Math.round(crescimento))}">
+<td>${loja}</td>
+<td>R$ ${v1.toFixed(2)}</td>
+<td>R$ ${v2.toFixed(2)}</td>
+<td>${crescimento.toFixed(1)}%</td>
+</tr>
+`
+
 })
+
+document.querySelector("#tabelaLojas tbody").innerHTML=html
 
 }
 
@@ -317,3 +400,4 @@ data:[totalAnterior,totalAtual]
 
 </body>
 </html>
+```
