@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
@@ -7,131 +8,48 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
-
-body{
-font-family:Arial;
-background:#eef1f5;
-padding:20px;
-}
-
-.container{
-background:white;
-padding:25px;
-border-radius:10px;
-max-width:1200px;
-margin:auto;
-box-shadow:0 0 10px rgba(0,0,0,0.2);
-}
-
-input,button{
-padding:8px;
-margin:5px;
-}
-
-.cards{
-display:flex;
-gap:10px;
-margin-top:15px;
-flex-wrap:wrap;
-}
-
-.card{
-flex:1;
-padding:15px;
-border-radius:8px;
-color:white;
-font-weight:bold;
-text-align:center;
-min-width:180px;
-}
-
+body{font-family:Arial;background:#eef1f5;padding:20px;}
+.container{background:white;padding:25px;border-radius:10px;max-width:1200px;margin:auto;box-shadow:0 0 10px rgba(0,0,0,0.2);}
+input,button{padding:8px;margin:5px;}
+.cards{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;}
+.card{flex:1;padding:15px;border-radius:8px;color:white;font-weight:bold;text-align:center;min-width:180px;}
 .azul{background:#2196f3}
 .verde{background:#4caf50}
 .roxo{background:#673ab7}
 .laranja{background:#ff9800}
-
 .vermelho{background:#e53935}
 .amarelo{background:#fdd835;color:black}
 .verdeEscuro{background:#1b5e20}
-
-.lista{
-margin-top:20px;
-background:#f7f7f7;
-padding:10px;
-border-radius:8px;
-max-height:300px;
-overflow:auto;
-}
-
-.item{
-padding:6px;
-border-bottom:1px solid #ddd;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:30px;
-}
-
-th,td{
-padding:10px;
-border:1px solid #ccc;
-text-align:center;
-}
-
-th{
-background:#1976d2;
-color:white;
-}
-
-.tituloParcial{
-font-size:20px;
-font-weight:bold;
-text-align:center;
-background:#e3f2fd;
-letter-spacing:1px;
-}
-
+.lista{margin-top:20px;background:#f7f7f7;padding:10px;border-radius:8px;max-height:300px;overflow:auto;}
+.item{padding:6px;border-bottom:1px solid #ddd;}
+table{width:100%;border-collapse:collapse;margin-top:30px;}
+th,td{padding:10px;border:1px solid #ccc;text-align:center;}
+th{background:#1976d2;color:white;}
+.tituloParcial{font-size:20px;font-weight:bold;text-align:center;background:#e3f2fd;letter-spacing:1px;}
 </style>
+
 </head>
 
 <body>
-
 <div class="container">
 
 <h2>📊 Comparador Inteligente de Marcas</h2>
 
-<input type="file" id="file1"> Semana passada
-<input type="file" id="file2"> Semana atual
+<input type="file" id="file1"> Semana passada <input type="file" id="file2"> Semana atual
 
 <br><br>
 
 <input type="text" id="marcas" placeholder="ex: nd ou marca propria" size="40">
 
-Horário
-<input type="time" id="horario">
+Horário <input type="time" id="horario">
 
 <button onclick="comparar()">Buscar</button>
 
 <div class="cards">
-
-<div class="card azul" id="totalAntigo">
-Semana passada
-</div>
-
-<div class="card verde" id="totalAtual">
-Semana atual
-</div>
-
-<div class="card roxo" id="crescimento">
-Crescimento
-</div>
-
-<div class="card laranja" id="diferenca">
-Diferença %
-</div>
-
+<div class="card azul" id="totalAntigo">Semana passada</div>
+<div class="card verde" id="totalAtual">Semana atual</div>
+<div class="card roxo" id="crescimento">Crescimento</div>
+<div class="card laranja" id="diferenca">Diferença %</div>
 </div>
 
 <h3>Produtos encontrados</h3>
@@ -142,7 +60,6 @@ Diferença %
 <h3>📋 Histórico</h3>
 
 <table>
-
 <thead>
 <tr>
 <th>Loja</th>
@@ -152,9 +69,7 @@ Diferença %
 <th>Crescimento</th>
 </tr>
 </thead>
-
 <tbody id="historicoBody"></tbody>
-
 </table>
 
 </div>
@@ -169,18 +84,9 @@ let tituloAdicionado=false
 let marcaModo=""
 
 const MARCAS_PROPRIAS=[
-"nutrifresh",
-"fresh",
-"petz",
-"super secao",
-"petix",
-"selection",
-"zee",
-"spike",
-"fuzz",
-"cdsg",
-"happy med",
-"babypads"
+"nutrifresh","fresh","petz","super secao","petix",
+"selection","zee","spike","fuzz","cdsg",
+"happy med","babypads"
 ]
 
 function ler(file,callback){
@@ -192,7 +98,9 @@ reader.onload=e=>{
 let data=new Uint8Array(e.target.result)
 let wb=XLSX.read(data,{type:'array'})
 let sheet=wb.Sheets[wb.SheetNames[0]]
-let json=XLSX.utils.sheet_to_json(sheet)
+
+/* 🔥 COMEÇA LER NA LINHA DO CABEÇALHO REAL */
+let json=XLSX.utils.sheet_to_json(sheet,{range:4})
 
 callback(json)
 
@@ -202,53 +110,41 @@ reader.readAsArrayBuffer(file)
 
 }
 
+/* 🔥 FUNÇÃO TOTALMENTE CORRIGIDA */
 function pegarLoja(p){
 
-let loja=p.Loja||p.loja||p.Store||Object.values(p)[0]||""
+if(!p.Loja) return null
 
-if(!loja) return null
+let loja=String(p.Loja).trim()
 
-if(String(loja).toLowerCase().includes("total")) return null
+if(loja==="" || loja.toLowerCase().includes("total")) return null
 
 return loja
-
 }
 
 function pegarProduto(p){
-return p.Produto||p.produto||Object.values(p)[1]||""
+return p.Produto||""
 }
 
 function pegarQuantidade(p){
-return Number(p.Quantidade||p.Qtd||Object.values(p)[2]||1)
+return Number(p.Quantidade||0)
 }
 
 function pegarValor(p){
-return Number(
-p["Valor Total"]||
-p.Total||
-Object.values(p)[3]||
-0
-)
+return Number(p["Valor Total"]||0)
 }
 
 function marcaPropria(produto){
-
 return MARCAS_PROPRIAS.some(m=>{
-
 if(m==="zee") return produto.includes("zee")
-
 let regex=new RegExp("\\b"+m+"\\b","i")
-
 return regex.test(produto)
-
 })
-
 }
 
 function comparar(){
 
 horarioAtual=document.getElementById("horario").value
-
 let marcaInput=document.getElementById("marcas").value.toLowerCase()
 
 let f1=document.getElementById("file1").files[0]
@@ -270,23 +166,15 @@ lojaAtual=loja
 
 let produto=String(pegarProduto(p)).toLowerCase()
 
-let encontrou=false
-
-if(marcaModo==="MARCA PROPRIA"){
-encontrou=marcaPropria(produto)
-}else{
-let regex=new RegExp("\\b"+marcaModo+"\\b","i")
-encontrou=regex.test(produto)
-}
+let encontrou = marcaModo==="MARCA PROPRIA"
+? marcaPropria(produto)
+: new RegExp("\\b"+marcaModo+"\\b","i").test(produto)
 
 if(encontrou){
 
 let venda=pegarQuantidade(p)*pegarValor(p)
 
-listaAnterior.push({
-produto:produto,
-valor:venda
-})
+listaAnterior.push({produto:produto,valor:venda})
 
 }
 
@@ -301,23 +189,15 @@ if(!loja) return
 
 let produto=String(pegarProduto(p)).toLowerCase()
 
-let encontrou=false
-
-if(marcaModo==="MARCA PROPRIA"){
-encontrou=marcaPropria(produto)
-}else{
-let regex=new RegExp("\\b"+marcaModo+"\\b","i")
-encontrou=regex.test(produto)
-}
+let encontrou = marcaModo==="MARCA PROPRIA"
+? marcaPropria(produto)
+: new RegExp("\\b"+marcaModo+"\\b","i").test(produto)
 
 if(encontrou){
 
 let venda=pegarQuantidade(p)*pegarValor(p)
 
-listaAtual.push({
-produto:produto,
-valor:venda
-})
+listaAtual.push({produto:produto,valor:venda})
 
 }
 
@@ -348,17 +228,14 @@ ${marcaModo} | ${p.produto} | R$ ${p.valor.toFixed(2)}
 })
 
 document.getElementById("listaProdutos").innerHTML=html
-
 }
 
 function corCrescimento(v){
-
 if(v<=-20) return "vermelho"
 if(v<0) return "laranja"
 if(v==0) return "amarelo"
 if(v<=20) return "verde"
 return "verdeEscuro"
-
 }
 
 function recalcular(perguntar=true){
@@ -369,31 +246,18 @@ let totalAtual=0
 listaAnterior.forEach(p=> totalAnterior+=p.valor)
 
 listaAtual.forEach((p,i)=>{
-
 let check=document.getElementById("prod_"+i)
-
-if(check && check.checked){
-totalAtual+=p.valor
-}
-
+if(check && check.checked) totalAtual+=p.valor
 })
 
 let crescimento=((totalAtual-totalAnterior)/totalAnterior)*100
 
-document.getElementById("totalAntigo").innerHTML=
-"Semana passada<br>R$ "+totalAnterior.toFixed(2)
-
-document.getElementById("totalAtual").innerHTML=
-"Semana atual<br>R$ "+totalAtual.toFixed(2)
-
-document.getElementById("crescimento").innerHTML=
-"Crescimento<br>"+crescimento.toFixed(1)+"%"
-
-document.getElementById("diferenca").innerHTML=
-"Atual vs Passado<br>"+((totalAtual/totalAnterior)*100).toFixed(1)+"%"
+document.getElementById("totalAntigo").innerHTML="Semana passada<br>R$ "+totalAnterior.toFixed(2)
+document.getElementById("totalAtual").innerHTML="Semana atual<br>R$ "+totalAtual.toFixed(2)
+document.getElementById("crescimento").innerHTML="Crescimento<br>"+crescimento.toFixed(1)+"%"
+document.getElementById("diferenca").innerHTML="Atual vs Passado<br>"+((totalAtual/totalAnterior)*100).toFixed(1)+"%"
 
 if(perguntar){
-
 if(confirm("Salvar no histórico?")){
 
 if(!tituloAdicionado){
@@ -405,9 +269,7 @@ PARCIAL COPA — ${horarioAtual}
 </td>
 </tr>
 `
-
 tituloAdicionado=true
-
 }
 
 document.getElementById("historicoBody").innerHTML+=`
@@ -419,9 +281,7 @@ document.getElementById("historicoBody").innerHTML+=`
 <td>${crescimento.toFixed(1)}%</td>
 </tr>
 `
-
 }
-
 }
 
 }
@@ -430,4 +290,3 @@ document.getElementById("historicoBody").innerHTML+=`
 
 </body>
 </html>
-```
