@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -7,41 +8,42 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
+
 body{
-  font-family:Arial;
-  background:#eef1f5;
-  padding:20px;
+font-family:Arial;
+background:#eef1f5;
+padding:20px;
 }
 
 .container{
-  background:white;
-  padding:25px;
-  border-radius:10px;
-  max-width:1200px;
-  margin:auto;
-  box-shadow:0 0 10px rgba(0,0,0,0.2);
+background:white;
+padding:25px;
+border-radius:10px;
+max-width:1200px;
+margin:auto;
+box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 input,button{
-  padding:8px;
-  margin:5px;
+padding:8px;
+margin:5px;
 }
 
 .cards{
-  display:flex;
-  gap:10px;
-  margin-top:15px;
-  flex-wrap:wrap;
+display:flex;
+gap:10px;
+margin-top:15px;
+flex-wrap:wrap;
 }
 
 .card{
-  flex:1;
-  padding:15px;
-  border-radius:8px;
-  color:white;
-  font-weight:bold;
-  text-align:center;
-  min-width:180px;
+flex:1;
+padding:15px;
+border-radius:8px;
+color:white;
+font-weight:bold;
+text-align:center;
+min-width:180px;
 }
 
 .azul{background:#2196f3}
@@ -49,39 +51,39 @@ input,button{
 .roxo{background:#673ab7}
 .laranja{background:#ff9800}
 
-.vermelho{background:#e53935;color:white}
+.vermelho{background:#e53935}
 .amarelo{background:#fdd835;color:black}
-.verdeEscuro{background:#1b5e20;color:white}
+.verdeEscuro{background:#1b5e20}
 
 .lista{
-  margin-top:20px;
-  background:#f7f7f7;
-  padding:10px;
-  border-radius:8px;
-  max-height:300px;
-  overflow:auto;
+margin-top:20px;
+background:#f7f7f7;
+padding:10px;
+border-radius:8px;
+max-height:300px;
+overflow:auto;
 }
 
 .item{
-  padding:6px;
-  border-bottom:1px solid #ddd;
+padding:6px;
+border-bottom:1px solid #ddd;
 }
 
 table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:30px;
+width:100%;
+border-collapse:collapse;
+margin-top:30px;
 }
 
 th,td{
-  padding:10px;
-  border:1px solid #ccc;
-  text-align:center;
+padding:10px;
+border:1px solid #ccc;
+text-align:center;
 }
 
 th{
-  background:#1976d2;
-  color:white;
+background:#1976d2;
+color:white;
 }
 
 </style>
@@ -155,8 +157,6 @@ Diferença %
 
 let listaAnterior=[]
 let listaAtual=[]
-let lojasAnterior={}
-let lojasAtual={}
 
 function ler(file,callback){
 
@@ -178,26 +178,28 @@ reader.readAsArrayBuffer(file)
 }
 
 function pegarLoja(p){
-  return p.Loja || p.loja || p.Store || "Sem Loja"
+return p.Loja || p.loja || p.Store || p.Filial || Object.values(p)[0] || "Sem Loja"
 }
 
 function pegarProduto(p){
-  return p.Produto || p.produto || ""
+return p.Produto || p.produto || p.Descrição || Object.values(p)[1] || ""
 }
 
 function pegarQuantidade(p){
-  return Number(p.Quantidade || p.Qtd || 1)
+return Number(p.Quantidade || p.Qtd || Object.values(p)[2] || 1)
 }
 
 function pegarValor(p){
-  return Number(
-    p["Valor Unitário (R$)"] ||
-    p["Valor Unitario"] ||
-    p.Valor ||
-    p.Venda ||
-    p.Total ||
-    0
-  )
+return Number(
+p["Valor Total"] ||
+p["Valor Unitário (R$)"] ||
+p["Valor Unitario"] ||
+p.Valor ||
+p.Venda ||
+p.Total ||
+Object.values(p)[3] ||
+0
+)
 }
 
 function comparar(){
@@ -215,8 +217,6 @@ return
 
 listaAnterior=[]
 listaAtual=[]
-lojasAnterior={}
-lojasAtual={}
 
 ler(f1,dados=>{
 
@@ -232,16 +232,13 @@ if(encontrou){
 let qtd=pegarQuantidade(p)
 let valor=pegarValor(p)
 
-let venda=qtd*valor
+let venda = qtd>1 ? qtd*valor : valor
 
 listaAnterior.push({
 nome:produto,
 loja:loja,
 valor:venda
 })
-
-if(!lojasAnterior[loja]) lojasAnterior[loja]=0
-lojasAnterior[loja]+=venda
 
 }
 
@@ -261,16 +258,13 @@ if(encontrou){
 let qtd=pegarQuantidade(p)
 let valor=pegarValor(p)
 
-let venda=qtd*valor
+let venda = qtd>1 ? qtd*valor : valor
 
 listaAtual.push({
 nome:produto,
 loja:loja,
 valor:venda
 })
-
-if(!lojasAtual[loja]) lojasAtual[loja]=0
-lojasAtual[loja]+=venda
 
 }
 
@@ -317,7 +311,19 @@ return "verdeEscuro"
 function recalcular(){
 
 let totalAtual=0
-let lojasAtualCalc={}
+let totalAnterior=0
+
+let lojasAnt={}
+let lojasAtu={}
+
+listaAnterior.forEach(p=>{
+
+totalAnterior+=p.valor
+
+if(!lojasAnt[p.loja]) lojasAnt[p.loja]=0
+lojasAnt[p.loja]+=p.valor
+
+})
 
 listaAtual.forEach((p,i)=>{
 
@@ -327,17 +333,11 @@ if(check && check.checked){
 
 totalAtual+=p.valor
 
-if(!lojasAtualCalc[p.loja]) lojasAtualCalc[p.loja]=0
-lojasAtualCalc[p.loja]+=p.valor
+if(!lojasAtu[p.loja]) lojasAtu[p.loja]=0
+lojasAtu[p.loja]+=p.valor
 
 }
 
-})
-
-let totalAnterior=0
-
-Object.values(lojasAnterior).forEach(v=>{
-totalAnterior+=v
 })
 
 let crescimento = totalAnterior>0
@@ -364,7 +364,7 @@ card.innerHTML=
 document.getElementById("diferenca").innerHTML=
 "Atual vs Passado<br>"+diferenca.toFixed(1)+"%"
 
-gerarTabela(lojasAnterior,lojasAtualCalc)
+gerarTabela(lojasAnt,lojasAtu)
 
 }
 
