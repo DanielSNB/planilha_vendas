@@ -2,17 +2,17 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Sistema Gerencial Inteligente PRO</title>
+<title>Gerador de Parcial</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#eef1f5;padding:20px}
+body{font-family:Arial;background:#021688;padding:20px}
 
 .container{
-background:white;
+background:rgb(230, 230, 236);
 padding:25px;
 border-radius:10px;
 max-width:1700px;
@@ -46,7 +46,7 @@ th{background:#1976d2;color:white}
 .listaBox{
 max-height:220px;
 overflow:auto;
-background:#f7f7f7;
+background:#fcf9f9;
 padding:10px;
 border-radius:8px;
 margin-top:10px
@@ -89,7 +89,7 @@ font-size:16px
 
 <div class="container">
 
-<h2>📊 Sistema Gerencial Inteligente PRO</h2>
+<h2>📊 Gerador de Parcial - COPA PETZ</h2>
 
 Modo
 <select id="modo">
@@ -259,11 +259,11 @@ function expandirBusca(busca){
 busca=(busca||"").toUpperCase()
 
 if(busca.includes("MARCA PROPRIA") || busca.includes("MARCA PRÓPRIA")){
-return ["SELECTION","ZEE","SPIKE","FRESH","SUPERSECAO","PETZ"]
+return ["SELECTIONS","ZEE","SPIKE","FRESH","SUPERSECAO","PETZ","FUZZ","FRESH","NUTRIFRESH","HAPPYMED","PETIX","CDSG","BAW WAW","PETLON","BABYPADS"]
 }
 
 if(busca.includes("MSD")){
-return ["MSD","BRAVECTO","NEXGARD","DRONTAL"]
+return ["MSD","BRAVECTO"]
 }
 
 if(busca.includes("FARMINA")){
@@ -279,7 +279,15 @@ return ["ELANCO","CREDELI","COMFORTIS"]
 }
 
 if(busca.includes("ZOETIS")){
-return ["ZOETIS","SIMPARICA","APOQUEL"]
+return ["REVOLUTION","SIMPARIC","APOQUEL"]
+}
+
+if(busca.includes("COMPLEMENTARES")){
+return ["OSSO","SNACK","BISC","SACHE"]
+}
+
+if(busca.includes("BRINQUEDOS")){
+return ["BQ."]
 }
 
 return [busca]
@@ -446,8 +454,7 @@ graficoFunc()
 
 }
 
-/* FUNÇÃO GERAR PARCIAL MODIFICADA */
-
+/* 🔥 ÚNICA PARTE ALTERADA (ADIÇÃO) */
 function gerarParcial(){
 
 let marcas=[...new Set(dados.map(d=>d.marca))]
@@ -478,7 +485,17 @@ let item=dados.find(d=>d.loja==loja && d.marca==m)
 
 if(item){
 
-linha[m]=`R$ ${item.vendaB.toFixed(2)}`
+// ✅ NOVO: crescimento individual da marca
+let crescMarca = item.vendaA ? ((item.vendaB-item.vendaA)/item.vendaA)*100 : 0
+
+linha[m]=`
+<div>
+R$ ${item.vendaB.toFixed(2)}<br>
+<span class="${cor(Math.round(crescMarca))}">
+(${crescMarca.toFixed(1)}%)
+</span>
+</div>
+`
 
 linha.vA+=item.vendaA
 linha.vB+=item.vendaB
